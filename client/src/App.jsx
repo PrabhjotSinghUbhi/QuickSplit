@@ -5,8 +5,9 @@ import { Toaster } from 'react-hot-toast';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import { fetchGroups } from './store/slices/groupSlice';
 
-// Layout
+// Layout and Routes
 import Layout from './components/Layout';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Pages
 import Login from './pages/Login';
@@ -30,10 +31,11 @@ function App() {
   const { token, isAuthenticated } = useSelector((state) => state.auth);
 
   useEffect(() => {
-    if (token && !isAuthenticated) {
+    // Check for token and fetch user data on app initialization
+    if (token) {
       dispatch(fetchCurrentUser());
     }
-  }, [dispatch, token, isAuthenticated]);
+  }, [dispatch, token]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -107,7 +109,7 @@ function App() {
           <Route path="/register" element={<Register />} />
 
           {/* Protected Routes */}
-          <Route path="/" element={<Layout />}>
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="groups" element={<Groups />} />
