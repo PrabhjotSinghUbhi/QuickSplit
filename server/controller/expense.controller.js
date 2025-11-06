@@ -4,6 +4,7 @@ import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { calculateBalances, validateSettlement } from "../utils/settlement.js";
 
 // Get all expenses for a group
 const getExpenses = asyncHandler(async (req, res) => {
@@ -245,42 +246,11 @@ const createExpense = asyncHandler(async (req, res) => {
 
         await newExpense.save();
 
-        // Update group's total spent (only for non-settlement expenses)
-        if (!newExpense.isSettlement) {
-            group.totalSpent += newExpense.amount;
-        }
-        
-        // Recalculate balances for all members
+        // Recalculate balances using centralized logic
         const allExpenses = await Expense.find({ group: groupId });
-        const balanceMap = new Map();
-        group.members.forEach((member) => {
-            balanceMap.set(member.userId._id.toString(), 0);
-        });
+        const { balanceMap, totalSpent } = calculateBalances(allExpenses, group.members);
 
-        let totalSpent = 0;
-        allExpenses.forEach((expense) => {
-            if (expense.isSettlement) {
-                // For settlements: when 'from' pays 'to' an amount
-                // The payer's balance INCREASES (moves toward zero from negative)
-                // The receiver's balance DECREASES (moves toward zero from positive)
-                const payerId = expense.paidBy.toString();
-                const receiverId = expense.splitBetween[0]?.toString();
-                if (payerId && receiverId) {
-                    balanceMap.set(payerId, (balanceMap.get(payerId) || 0) + expense.amount);
-                    balanceMap.set(receiverId, (balanceMap.get(receiverId) || 0) - expense.amount);
-                }
-            } else {
-                totalSpent += expense.amount;
-                const splits = expense.calculateSplits();
-                const payerId = expense.paidBy.toString();
-                balanceMap.set(payerId, (balanceMap.get(payerId) || 0) + expense.amount);
-                splits.forEach((split) => {
-                    const userId = split.userId.toString();
-                    balanceMap.set(userId, (balanceMap.get(userId) || 0) - split.amount);
-                });
-            }
-        });
-
+        // Update group member balances and totalSpent
         group.members.forEach((member) => {
             member.balance = balanceMap.get(member.userId._id.toString()) || 0;
         });
@@ -543,6 +513,21 @@ const settleExpense = asyncHandler(async (req, res) => {
             throw new ApiError(400, "Both users must be group members");
         }
 
+        // Calculate current balances to validate settlement
+        const expenses = await Expense.find({ group: groupId });
+        const { balanceMap } = calculateBalances(expenses, group.members);
+
+        // Validate settlement
+        const validation = validateSettlement(from, to, Number.parseFloat(amount), balanceMap);
+        if (!validation.valid) {
+            throw new ApiError(400, validation.error);
+        }
+
+        // Log warning if present
+        if (validation.warning) {
+            console.warn('Settlement warning:', validation.warning);
+        }
+
         // Get user details for description
         const fromUser = await User.findById(from);
         const toUser = await User.findById(to);
@@ -567,39 +552,13 @@ const settleExpense = asyncHandler(async (req, res) => {
 
         await settlement.save();
 
-        // Recalculate all balances after settlement
+        // Recalculate all balances using centralized logic
         const allExpenses = await Expense.find({ group: groupId });
-        const balanceMap = new Map();
-        group.members.forEach((member) => {
-            balanceMap.set(member.userId._id.toString(), 0);
-        });
+        const { balanceMap: updatedBalanceMap, totalSpent } = calculateBalances(allExpenses, group.members);
 
-        let totalSpent = 0;
-        allExpenses.forEach((expense) => {
-            if (expense.isSettlement) {
-                // For settlements: when 'from' pays 'to' an amount
-                // The payer's balance INCREASES (moves toward zero from negative)
-                // The receiver's balance DECREASES (moves toward zero from positive)
-                const payerId = expense.paidBy.toString();
-                const receiverId = expense.splitBetween[0]?.toString();
-                if (payerId && receiverId) {
-                    balanceMap.set(payerId, (balanceMap.get(payerId) || 0) + expense.amount);
-                    balanceMap.set(receiverId, (balanceMap.get(receiverId) || 0) - expense.amount);
-                }
-            } else {
-                totalSpent += expense.amount;
-                const splits = expense.calculateSplits();
-                const payerId = expense.paidBy.toString();
-                balanceMap.set(payerId, (balanceMap.get(payerId) || 0) + expense.amount);
-                splits.forEach((split) => {
-                    const userId = split.userId.toString();
-                    balanceMap.set(userId, (balanceMap.get(userId) || 0) - split.amount);
-                });
-            }
-        });
-
+        // Update group member balances and totalSpent
         group.members.forEach((member) => {
-            member.balance = balanceMap.get(member.userId._id.toString()) || 0;
+            member.balance = updatedBalanceMap.get(member.userId._id.toString()) || 0;
         });
         group.totalSpent = totalSpent;
         await group.save();

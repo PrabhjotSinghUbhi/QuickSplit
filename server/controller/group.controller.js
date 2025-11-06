@@ -4,6 +4,7 @@ import { Expense } from "../models/expense.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { calculateBalances, simplifyDebts } from "../utils/settlement.js";
 
 // Get all groups for the authenticated user
 const getGroups = asyncHandler(async (req, res) => {
@@ -578,63 +579,11 @@ const getBalances = asyncHandler(async (req, res) => {
             throw new ApiError(403, "You are not a member of this group");
         }
 
-        // Calculate balances from expenses
+        // Get all expenses for the group
         const expenses = await Expense.find({ group: groupId });
 
-        // Reset balances
-        const balanceMap = new Map();
-        group.members.forEach((member) => {
-            balanceMap.set(member.userId._id.toString(), 0);
-        });
-
-        // Calculate total spent (excluding settlements)
-        let totalSpent = 0;
-
-        // Calculate balances based on expenses
-        expenses.forEach((expense) => {
-            if (expense.isSettlement) {
-                // For settlements: when 'from' pays 'to' an amount
-                // The payer's balance INCREASES (moves toward zero from negative)
-                // The receiver's balance DECREASES (moves toward zero from positive)
-                const payerId = expense.paidBy.toString();
-                const receiverId = expense.splitBetween[0]?.toString();
-
-                if (payerId && receiverId) {
-                    // Payer's balance increases (they paid off debt)
-                    balanceMap.set(
-                        payerId,
-                        (balanceMap.get(payerId) || 0) + expense.amount
-                    );
-                    // Receiver's balance decreases (debt to them was paid)
-                    balanceMap.set(
-                        receiverId,
-                        (balanceMap.get(receiverId) || 0) - expense.amount
-                    );
-                }
-                // Don't add settlements to totalSpent
-            } else {
-                // Regular expense - add to total spent
-                totalSpent += expense.amount;
-
-                const splits = expense.calculateSplits();
-                const payerId = expense.paidBy.toString();
-
-                // Payer gets credited for the full amount
-                balanceMap.set(
-                    payerId,
-                    (balanceMap.get(payerId) || 0) + expense.amount
-                );
-
-                // Each participant gets debited their share
-                splits.forEach((split) => {
-                    const userId = split.userId.toString();
-                    balanceMap.set(
-                        userId,
-                        (balanceMap.get(userId) || 0) - split.amount
-                    );
-                });
-            }
-        });
+        // Use centralized balance calculation
+        const { balanceMap, totalSpent } = calculateBalances(expenses, group.members);
 
         // Update group member balances and totalSpent
         group.members.forEach((member) => {
@@ -645,6 +594,9 @@ const getBalances = asyncHandler(async (req, res) => {
         group.totalSpent = totalSpent;
 
         await group.save();
+
+        // Calculate simplified settlements
+        const settlements = simplifyDebts(balanceMap, group.members);
 
         // Format balances for response
         const balances = group.members.map((m) => ({
@@ -657,7 +609,15 @@ const getBalances = asyncHandler(async (req, res) => {
         return res
             .status(200)
             .json(
-                new ApiResponse(balances, 200, "Balances fetched successfully")
+                new ApiResponse(
+                    {
+                        balances,
+                        settlements,
+                        totalSpent
+                    },
+                    200,
+                    "Balances fetched successfully"
+                )
             );
     } catch (error) {
         console.error("Error in fetching balances:", error.message);

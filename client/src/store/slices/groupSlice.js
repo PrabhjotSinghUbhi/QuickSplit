@@ -98,8 +98,8 @@ export const fetchBalances = createAsyncThunk(
   async (groupId, { rejectWithValue }) => {
     try {
       const response = await groupAPI.getBalances(groupId);
-      // Backend returns: { payload: [...balances], statusCode, message }
-      return { groupId, balances: response.data.payload };
+      // Backend now returns: { payload: { balances, settlements, totalSpent }, statusCode, message }
+      return { groupId, data: response.data.payload };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch balances');
     }
@@ -117,7 +117,10 @@ export const settleUp = createAsyncThunk(
         amount
       });
       
-      // Fetch updated group details to get new balances
+      // Refetch balances to get updated state from backend
+      await dispatch(fetchBalances(groupId));
+      
+      // Fetch updated group details
       const groupResponse = await groupAPI.getGroupById(groupId);
       return groupResponse.data.payload;
     } catch (error) {
@@ -132,6 +135,7 @@ const groupSlice = createSlice({
     groups: [],
     currentGroup: null,
     balances: {},
+    settlements: {},
     loading: false,
     error: null,
   },
@@ -215,7 +219,19 @@ const groupSlice = createSlice({
       })
       // Fetch balances
       .addCase(fetchBalances.fulfilled, (state, action) => {
-        state.balances[action.payload.groupId] = action.payload.balances;
+        const { groupId, data } = action.payload;
+        state.balances[groupId] = data.balances;
+        state.settlements[groupId] = data.settlements;
+        
+        // Update currentGroup if it matches
+        if (state.currentGroup && state.currentGroup._id === groupId) {
+          state.currentGroup.totalSpent = data.totalSpent;
+          // Update member balances
+          state.currentGroup.members = state.currentGroup.members.map(member => {
+            const balance = data.balances.find(b => b.user === member._id);
+            return balance ? { ...member, balance: balance.amount } : member;
+          });
+        }
       })
       // Settle up
       .addCase(settleUp.fulfilled, (state, action) => {

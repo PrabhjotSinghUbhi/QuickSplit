@@ -3,31 +3,22 @@ import { useDispatch, useSelector } from "react-redux";
 import { X, ArrowRight, CheckCircle } from "lucide-react";
 import toast from 'react-hot-toast';
 import { closeModal } from "../store/slices/uiSlice";
-import { settleUp } from "../store/slices/groupSlice";
+import { settleUp, fetchBalances } from "../store/slices/groupSlice";
 import { fetchExpenses } from "../store/slices/expenseSlice";
-import { formatCurrency, simplifyDebts } from "../utils/helpers";
+import { formatCurrency } from "../utils/helpers";
 
 const SettleUpModal = () => {
     const dispatch = useDispatch();
     const { modals } = useSelector((state) => state.ui);
-    const { currentGroup } = useSelector((state) => state.groups);
+    const { currentGroup, settlements: groupSettlements } = useSelector((state) => state.groups);
     const { user } = useSelector((state) => state.auth);
 
     const [loading, setLoading] = useState(false);
     const [selectedSettlement, setSelectedSettlement] = useState(null);
     const [showAllSettlements, setShowAllSettlements] = useState(false);
 
-    // Calculate settlements from current group members
-    const currentGroupBalances = currentGroup?.members?.map(member => ({
-        user: {
-            _id: member._id,
-            name: member.name,
-            email: member.email
-        },
-        amount: member.balance
-    })) || [];
-
-    const allSettlements = simplifyDebts(currentGroupBalances);
+    // Get settlements from backend (single source of truth)
+    const allSettlements = groupSettlements[currentGroup?._id] || [];
 
     // Filter settlements involving the current user
     const userSettlements = allSettlements.filter(
@@ -43,13 +34,18 @@ const SettleUpModal = () => {
             document.body.style.overflow = "hidden";
             setSelectedSettlement(null);
             setShowAllSettlements(false);
+            
+            // Fetch latest settlements from backend
+            if (currentGroup?._id) {
+                dispatch(fetchBalances(currentGroup._id));
+            }
         } else {
             document.body.style.overflow = "unset";
         }
         return () => {
             document.body.style.overflow = "unset";
         };
-    }, [modals.settleUp]);
+    }, [modals.settleUp, currentGroup, dispatch]);
 
     const handleClose = () => {
         setSelectedSettlement(null);

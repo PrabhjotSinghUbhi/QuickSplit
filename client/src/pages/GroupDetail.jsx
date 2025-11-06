@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { fetchGroupDetails, fetchBalances, deleteGroup, clearCurrentGroup } from '../store/slices/groupSlice';
 import { fetchExpenses } from '../store/slices/expenseSlice';
 import { openModal } from '../store/slices/uiSlice';
-import { formatCurrency, getRelativeTime, simplifyDebts } from '../utils/helpers';
+import { formatCurrency, formatDate, getRelativeTime } from '../utils/helpers';
 import ChatRoom from '../components/ChatRoom';
 
 const GroupDetail = () => {
@@ -15,7 +15,7 @@ const GroupDetail = () => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('expenses'); // 'expenses' or 'chat'
   
-  const { currentGroup, balances, loading } = useSelector((state) => state.groups);
+  const { currentGroup, balances, settlements: groupSettlements, loading } = useSelector((state) => state.groups);
   const { expensesByGroup } = useSelector((state) => state.expenses);
   const { user } = useSelector((state) => state.auth);
 
@@ -51,17 +51,8 @@ const GroupDetail = () => {
   const groupExpenses = expensesByGroup[groupId] || [];
   const groupBalances = balances[groupId] || [];
   
-  // Create balances array from currentGroup members for settlement calculation
-  const currentGroupBalances = currentGroup.members?.map(member => ({
-    user: {
-      _id: member._id,
-      name: member.name,
-      email: member.email
-    },
-    amount: member.balance
-  })) || [];
-  
-  const settlements = simplifyDebts(currentGroupBalances);
+  // Get settlements from backend (single source of truth)
+  const settlements = groupSettlements[groupId] || [];
 
   // Use server-calculated totalSpent (excludes settlements)
   const totalSpent = currentGroup.totalSpent || 0;

@@ -82,7 +82,14 @@ export const truncateText = (text, maxLength) => {
   return text.substring(0, maxLength) + '...';
 };
 
-// Calculate simplified debts (minimize transactions)
+/**
+ * @deprecated This function is deprecated and should not be used for new code.
+ * The backend is now the single source of truth for settlement calculations.
+ * Use the settlements returned from the backend API (fetchBalances) instead.
+ * This function is kept only for backward compatibility or fallback scenarios.
+ * 
+ * Calculate simplified debts (minimize transactions)
+ */
 export const simplifyDebts = (balances) => {
   const creditors = [];
   const debtors = [];
