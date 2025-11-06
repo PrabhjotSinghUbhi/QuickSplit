@@ -152,9 +152,21 @@ groupSchema.methods.isAdmin = function (userId) {
 
 // Method to check if user is a member
 groupSchema.methods.isMember = function (userId) {
+    if (!this.members || !Array.isArray(this.members)) {
+        console.log('Warning: members array is not defined or not an array');
+        return false;
+    }
+    
     return this.members.some((m) => {
-        const memberId = m.userId._id ? m.userId._id.toString() : m.userId.toString();
-        return memberId === userId.toString();
+        if (!m || !m.userId) {
+            console.log('Warning: invalid member or missing userId:', m);
+            return false;
+        }
+        // Handle both populated and unpopulated cases
+        const memberId = (m.userId._id ? m.userId._id : m.userId).toString();
+        const targetId = userId.toString();
+        console.log('Comparing member:', memberId, 'with target:', targetId);
+        return memberId === targetId;
     });
 };
 

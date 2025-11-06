@@ -155,7 +155,9 @@ const createGroup = asyncHandler(async (req, res) => {
                 // member can be email or userId
                 let user;
                 if (member.email) {
-                    user = await User.findOne({ email: member.email.toLowerCase() });
+                    user = await User.findOne({
+                        email: member.email.toLowerCase()
+                    });
                 } else if (member.userId || member._id) {
                     user = await User.findById(member.userId || member._id);
                 }
@@ -353,11 +355,22 @@ const deleteGroup = asyncHandler(async (req, res) => {
 // Add a member to the group
 const addMember = asyncHandler(async (req, res) => {
     try {
-        const { groupId } = req.params;
+        const groupId = req.params.groupId || req.groupId;
         const { email, userId: newUserId } = req.body;
         const userId = req.user._id;
 
-        const group = await Group.findById(groupId);
+        console.log('Add Member - Debug:');
+        console.log('GroupId from params:', req.params.groupId);
+        console.log('GroupId from req:', req.groupId);
+        console.log('Final groupId used:', groupId);
+
+        if (!groupId || groupId === 'undefined') {
+            throw new ApiError(400, "Invalid group ID provided");
+        }
+
+        const group = await Group.findById(groupId)
+            .populate('members.userId')
+            .populate('createdBy');
 
         if (!group) {
             throw new ApiError(404, "Group not found");
@@ -443,10 +456,23 @@ const addMember = asyncHandler(async (req, res) => {
 // Remove a member from the group
 const removeMember = asyncHandler(async (req, res) => {
     try {
-        const { groupId, memberId } = req.params;
+        const groupId = req.params.groupId || req.groupId;
+        const { memberId } = req.params;
         const userId = req.user._id;
 
-        const group = await Group.findById(groupId);
+        console.log('Remove Member - Debug:');
+        console.log('GroupId from params:', req.params.groupId);
+        console.log('GroupId from req:', req.groupId);
+        console.log('Final groupId used:', groupId);
+        console.log('MemberId:', memberId);
+
+        if (!groupId || groupId === 'undefined') {
+            throw new ApiError(400, "Invalid group ID provided");
+        }
+
+        const group = await Group.findById(groupId)
+            .populate('members.userId')
+            .populate('createdBy');
 
         if (!group) {
             throw new ApiError(404, "Group not found");
@@ -568,7 +594,7 @@ const getBalances = asyncHandler(async (req, res) => {
                 // For settlements, adjust balances accordingly
                 const payerId = expense.paidBy.toString();
                 const receiverId = expense.splitBetween[0]?.toString();
-                
+
                 if (payerId && receiverId) {
                     balanceMap.set(
                         payerId,
