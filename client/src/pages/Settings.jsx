@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { User, Mail, Bell, Globe, Lock, Save } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { addNotification } from '../store/slices/uiSlice';
 
 const Settings = () => {
@@ -23,6 +24,7 @@ const Settings = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
+    toast.success('Settings saved successfully');
     dispatch(addNotification({
       type: 'success',
       message: 'Settings saved successfully',

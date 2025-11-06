@@ -6,6 +6,9 @@ const Header = () => {
   const dispatch = useDispatch();
   const { sidebarOpen } = useSelector((state) => state.ui);
   const { notifications } = useSelector((state) => state.ui);
+  const { groups } = useSelector((state) => state.groups);
+  
+  const hasGroups = groups && groups.length > 0;
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -30,7 +33,9 @@ const Header = () => {
           {/* Add Expense Button */}
           <button
             onClick={() => dispatch(openModal('addExpense'))}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            disabled={!hasGroups}
+            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={!hasGroups ? 'Create a group first' : 'Add Expense'}
           >
             <Plus className="w-5 h-5" />
             <span className="font-medium">Add Expense</span>

@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X, Plus, Trash2, Mail } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { createGroup } from '../store/slices/groupSlice';
 import { closeModal } from '../store/slices/uiSlice';
 
 const CreateGroupModal = () => {
   const dispatch = useDispatch();
   const { modals } = useSelector((state) => state.ui);
+  // eslint-disable-next-line no-unused-vars
   const { user } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     name: '',
@@ -35,7 +37,7 @@ const CreateGroupModal = () => {
     if (newMember.email.trim()) {
       // Check if email already exists
       if (members.some(m => m.email === newMember.email)) {
-        alert('This email is already added');
+        toast.error('This email is already added');
         return;
       }
       
@@ -45,6 +47,7 @@ const CreateGroupModal = () => {
         _id: `temp_${Date.now()}_${Math.random()}`,
       }]);
       setNewMember({ email: '', name: '' });
+      toast.success('Member added to list');
     }
   };
 
@@ -63,12 +66,14 @@ const CreateGroupModal = () => {
         members: members,
       })).unwrap();
       
+      toast.success('Group created successfully!');
       setFormData({ name: '', description: '', currency: 'INR' });
       setMembers([]);
       setNewMember({ email: '', name: '' });
       dispatch(closeModal('createGroup'));
     } catch (error) {
       console.error('Failed to create group:', error);
+      toast.error(error.message || 'Failed to create group');
     } finally {
       setLoading(false);
     }

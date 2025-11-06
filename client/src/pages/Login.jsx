@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { login, clearError } from '../store/slices/authSlice';
 
 const Login = () => {
@@ -51,9 +52,11 @@ const Login = () => {
     e.preventDefault();
     try {
       await dispatch(login(formData)).unwrap();
+      toast.success('Login successful!');
       navigate('/dashboard');
     } catch (err) {
       console.error('Login failed:', err);
+      // Toast for error is shown via field-specific errors in UI
     }
   };
 

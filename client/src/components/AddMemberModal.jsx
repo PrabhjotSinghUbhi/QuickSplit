@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { X, Mail, User } from "lucide-react";
+import toast from 'react-hot-toast';
 import { addMember } from "../store/slices/groupSlice";
 import { closeModal } from "../store/slices/uiSlice";
 
@@ -48,9 +49,11 @@ const AddMemberModal = () => {
                 })
             ).unwrap();
 
+            toast.success('Member added successfully!');
             handleClose();
         } catch (err) {
             setError(err.message || "Failed to add member");
+            toast.error(err.message || "Failed to add member");
             console.error("Failed to add member:", err);
         } finally {
             setLoading(false);

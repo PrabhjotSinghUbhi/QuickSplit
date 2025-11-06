@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { register, clearError } from '../store/slices/authSlice';
 
 const Register = () => {
@@ -90,9 +91,11 @@ const Register = () => {
         email: formData.email,
         password: formData.password,
       })).unwrap();
+      toast.success('Account created successfully!');
       navigate('/dashboard');
     } catch (err) {
       console.error('Registration failed:', err);
+      // Toast for error is shown via field-specific errors in UI
     }
   };
 

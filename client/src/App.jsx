@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { Toaster } from 'react-hot-toast';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import { fetchGroups } from './store/slices/groupSlice';
 
@@ -43,6 +44,63 @@ function App() {
   return (
     <Router>
       <div className="App">
+        {/* Toast Notifications */}
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          gutter={12}
+          toastOptions={{
+            // Default options
+            duration: 4000,
+            style: {
+              borderRadius: '12px',
+              padding: '16px 20px',
+              fontSize: '14px',
+              fontWeight: '500',
+              maxWidth: '500px',
+              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            },
+            // Success toast
+            success: {
+              duration: 3000,
+              style: {
+                background: '#d1fae5',
+                color: '#065f46',
+                border: '2px solid #34d399',
+              },
+              iconTheme: {
+                primary: '#10b981',
+                secondary: '#ffffff',
+              },
+            },
+            // Error toast
+            error: {
+              duration: 4000,
+              style: {
+                background: '#fee2e2',
+                color: '#7f1d1d',
+                border: '2px solid #f87171',
+              },
+              iconTheme: {
+                primary: '#ef4444',
+                secondary: '#ffffff',
+              },
+            },
+            // Loading toast
+            loading: {
+              style: {
+                background: '#dbeafe',
+                color: '#1e3a8a',
+                border: '2px solid #60a5fa',
+              },
+              iconTheme: {
+                primary: '#3b82f6',
+                secondary: '#ffffff',
+              },
+            },
+          }}
+        />
+
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />

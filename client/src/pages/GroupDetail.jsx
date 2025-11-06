@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Users, Receipt, TrendingUp, Plus, ArrowLeft, Settings, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { fetchGroupDetails, fetchBalances, deleteGroup, clearCurrentGroup } from '../store/slices/groupSlice';
 import { fetchExpenses } from '../store/slices/expenseSlice';
 import { openModal } from '../store/slices/uiSlice';
@@ -56,9 +57,11 @@ const GroupDetail = () => {
     if (window.confirm('Are you sure you want to delete this group?')) {
       try {
         await dispatch(deleteGroup(groupId)).unwrap();
+        toast.success('Group deleted successfully');
         navigate('/groups');
       } catch (error) {
         console.error('Failed to delete group:', error);
+        toast.error(error.message || 'Failed to delete group');
       }
     }
   };

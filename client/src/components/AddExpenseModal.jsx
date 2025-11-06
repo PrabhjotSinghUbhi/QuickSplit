@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X, Plus, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { createExpense } from '../store/slices/expenseSlice';
 import { closeModal } from '../store/slices/uiSlice';
 
@@ -23,6 +24,7 @@ const AddExpenseModal = () => {
     splits: [],
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const currencies = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'JPY'];
 
@@ -69,6 +71,20 @@ const AddExpenseModal = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    
+    // Check if no groups exist
+    if (groupsList.length === 0) {
+      setError('Please create a group first before adding expenses');
+      return;
+    }
+    
+    // Check if no group is selected
+    if (!formData.groupId) {
+      setError('Please select a group');
+      return;
+    }
+    
     setLoading(true);
     try {
       // Build splitBetween array (all users in the split)
@@ -96,9 +112,12 @@ const AddExpenseModal = () => {
           },
         })
       ).unwrap();
+      toast.success('Expense created successfully!');
       handleClose();
     } catch (error) {
       console.error('Failed to create expense:', error);
+      setError(error.message || 'Failed to create expense. Please try again.');
+      toast.error(error.message || 'Failed to create expense');
     } finally {
       setLoading(false);
     }
@@ -114,6 +133,7 @@ const AddExpenseModal = () => {
       splitType: 'equal',
       splits: [],
     });
+    setError('');
     dispatch(closeModal('addExpense'));
   };
 
@@ -150,6 +170,21 @@ const AddExpenseModal = () => {
             <X className="w-5 h-5 text-gray-600" />
           </button>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-300 text-red-700 px-4 py-3 rounded-lg">
+            {error}
+          </div>
+        )}
+        
+        {/* No Groups Warning */}
+        {groupsList.length === 0 && (
+          <div className="mb-4 bg-yellow-50 border border-yellow-300 text-yellow-700 px-4 py-3 rounded-lg">
+            <p className="font-medium">No groups available</p>
+            <p className="text-sm mt-1">Please create a group first before adding expenses.</p>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
