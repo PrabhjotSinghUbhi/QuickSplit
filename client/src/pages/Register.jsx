@@ -87,9 +87,10 @@ const Register = () => {
 
     try {
       await dispatch(register({
-        name: formData.name,
+        fullName: formData.name,
         email: formData.email,
         password: formData.password,
+        confirmPassword: formData.confirmPassword,
       })).unwrap();
       toast.success('Account created successfully!');
       navigate('/dashboard');

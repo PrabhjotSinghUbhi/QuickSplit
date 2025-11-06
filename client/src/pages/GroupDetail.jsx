@@ -48,10 +48,24 @@ const GroupDetail = () => {
 
   const groupExpenses = expensesByGroup[groupId] || [];
   const groupBalances = balances[groupId] || [];
-  const settlements = simplifyDebts(groupBalances);
+  
+  // Create balances array from currentGroup members for settlement calculation
+  const currentGroupBalances = currentGroup.members?.map(member => ({
+    user: {
+      _id: member._id,
+      name: member.name,
+      email: member.email
+    },
+    amount: member.balance
+  })) || [];
+  
+  const settlements = simplifyDebts(currentGroupBalances);
 
   const totalSpent = groupExpenses.reduce((sum, exp) => sum + exp.amount, 0);
-  const userBalance = groupBalances.find(b => b.user._id === user._id)?.amount || 0;
+  
+  // Get user balance from currentGroup members array
+  const currentUserMember = currentGroup.members?.find(m => m._id === user._id);
+  const userBalance = currentUserMember?.balance || 0;
 
   const handleDeleteGroup = async () => {
     if (window.confirm('Are you sure you want to delete this group?')) {

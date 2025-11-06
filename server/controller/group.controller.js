@@ -18,6 +18,18 @@ const getGroups = asyncHandler(async (req, res) => {
             .populate("members.userId", "fullName email username")
             .sort({ updatedAt: -1 });
 
+        // Get expense counts for each group
+        const groupIds = groups.map(g => g._id);
+        const expenseCounts = await Expense.aggregate([
+            { $match: { group: { $in: groupIds } } },
+            { $group: { _id: "$group", count: { $sum: 1 } } }
+        ]);
+        
+        const expenseCountMap = {};
+        expenseCounts.forEach(ec => {
+            expenseCountMap[ec._id.toString()] = ec.count;
+        });
+
         // Transform groups to match client structure
         const transformedGroups = groups.map((group) => ({
             _id: group._id,
@@ -35,6 +47,7 @@ const getGroups = asyncHandler(async (req, res) => {
             updatedAt: group.updatedAt,
             baseCurrency: group.baseCurrency,
             totalSpent: group.totalSpent,
+            expenseCount: expenseCountMap[group._id.toString()] || 0,
             balances: group.members.map((m) => ({
                 user: m.userId._id,
                 amount: m.balance

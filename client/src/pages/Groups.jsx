@@ -9,6 +9,7 @@ import { formatCurrency } from '../utils/helpers';
 const Groups = () => {
   const dispatch = useDispatch();
   const { groups, loading } = useSelector((state) => state.groups);
+  const { user } = useSelector((state) => state.auth);
 
   useEffect(() => {
     dispatch(fetchGroups());
@@ -66,8 +67,12 @@ const Groups = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {groups.map((group) => {
-            const totalExpenses = group.expenses?.length || 0;
-            const totalSpent = group.expenses?.reduce((sum, exp) => sum + exp.amount, 0) || 0;
+            const totalExpenses = group.expenseCount || 0;
+            const totalSpent = group.totalSpent || 0;
+            
+            // Find current user's balance in this group
+            const currentUserMember = group.members?.find(m => m._id === user?._id);
+            const userBalance = currentUserMember?.balance || 0;
             
             return (
               <Link
@@ -97,16 +102,27 @@ const Groups = () => {
 
                 {/* Group Stats */}
                 <div className="pt-4 border-t border-gray-100">
-                  <div className="flex items-center justify-between text-sm">
+                  <div className="grid grid-cols-3 gap-4 text-sm">
                     <div>
                       <p className="text-gray-500">Total Spent</p>
                       <p className="font-semibold text-gray-900">
                         {formatCurrency(totalSpent, group.baseCurrency || group.currency)}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-center">
                       <p className="text-gray-500">Expenses</p>
                       <p className="font-semibold text-gray-900">{totalExpenses}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-gray-500">Your Balance</p>
+                      <p className={`font-semibold ${userBalance > 0 ? 'text-green-600' : userBalance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                        {formatCurrency(Math.abs(userBalance), group.baseCurrency || group.currency)}
+                      </p>
+                      {userBalance !== 0 && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {userBalance > 0 ? 'you get back' : 'you owe'}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
