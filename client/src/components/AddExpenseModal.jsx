@@ -10,6 +10,9 @@ const AddExpenseModal = () => {
   const { groups, currentGroup } = useSelector((state) => state.groups);
   const { user } = useSelector((state) => state.auth);
   
+  // Ensure groups is always an array
+  const groupsList = Array.isArray(groups) ? groups : [];
+  
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
@@ -110,7 +113,7 @@ const AddExpenseModal = () => {
     }));
   };
 
-  const selectedGroup = groups.find((g) => g._id === formData.groupId);
+  const selectedGroup = groupsList.find((g) => g._id === formData.groupId);
 
   if (!modals.addExpense) return null;
 
@@ -146,7 +149,7 @@ const AddExpenseModal = () => {
               required
               value={formData.groupId}
               onChange={(e) => {
-                const group = groups.find((g) => g._id === e.target.value);
+                const group = groupsList.find((g) => g._id === e.target.value);
                 setFormData({
                   ...formData,
                   groupId: e.target.value,
@@ -162,7 +165,7 @@ const AddExpenseModal = () => {
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">Select a group</option>
-              {groups.map((group) => (
+              {groupsList.map((group) => (
                 <option key={group._id} value={group._id}>
                   {group.name}
                 </option>

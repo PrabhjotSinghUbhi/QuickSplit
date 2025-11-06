@@ -7,7 +7,8 @@ export const fetchGroups = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await groupAPI.getGroups();
-      return response.data;
+      // Backend returns: { payload: [...groups], statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch groups');
     }
@@ -19,7 +20,8 @@ export const fetchGroupDetails = createAsyncThunk(
   async (groupId, { rejectWithValue }) => {
     try {
       const response = await groupAPI.getGroupById(groupId);
-      return response.data;
+      // Backend returns: { payload: {...group}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch group details');
     }
@@ -31,7 +33,8 @@ export const createGroup = createAsyncThunk(
   async (groupData, { rejectWithValue }) => {
     try {
       const response = await groupAPI.createGroup(groupData);
-      return response.data;
+      // Backend returns: { payload: {...group}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create group');
     }
@@ -43,7 +46,8 @@ export const updateGroup = createAsyncThunk(
   async ({ groupId, groupData }, { rejectWithValue }) => {
     try {
       const response = await groupAPI.updateGroup(groupId, groupData);
-      return response.data;
+      // Backend returns: { payload: {...group}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update group');
     }
@@ -67,7 +71,8 @@ export const addMember = createAsyncThunk(
   async ({ groupId, memberData }, { rejectWithValue }) => {
     try {
       const response = await groupAPI.addMember(groupId, memberData);
-      return response.data;
+      // Backend returns: { payload: {...group}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to add member');
     }
@@ -79,7 +84,8 @@ export const removeMember = createAsyncThunk(
   async ({ groupId, memberId }, { rejectWithValue }) => {
     try {
       const response = await groupAPI.removeMember(groupId, memberId);
-      return response.data;
+      // Backend returns: { payload: {...group}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to remove member');
     }
@@ -91,7 +97,8 @@ export const fetchBalances = createAsyncThunk(
   async (groupId, { rejectWithValue }) => {
     try {
       const response = await groupAPI.getBalances(groupId);
-      return { groupId, balances: response.data };
+      // Backend returns: { payload: [...balances], statusCode, message }
+      return { groupId, balances: response.data.payload };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch balances');
     }

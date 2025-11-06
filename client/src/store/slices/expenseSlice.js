@@ -7,7 +7,8 @@ export const fetchExpenses = createAsyncThunk(
   async (groupId, { rejectWithValue }) => {
     try {
       const response = await expenseAPI.getExpenses(groupId);
-      return { groupId, expenses: response.data };
+      // Backend returns: { payload: [...expenses], statusCode, message }
+      return { groupId, expenses: response.data.payload };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch expenses');
     }
@@ -19,7 +20,8 @@ export const createExpense = createAsyncThunk(
   async ({ groupId, expenseData }, { rejectWithValue }) => {
     try {
       const response = await expenseAPI.createExpense(groupId, expenseData);
-      return response.data;
+      // Backend returns: { payload: {...expense}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to create expense');
     }
@@ -31,7 +33,8 @@ export const updateExpense = createAsyncThunk(
   async ({ expenseId, expenseData }, { rejectWithValue }) => {
     try {
       const response = await expenseAPI.updateExpense(expenseId, expenseData);
-      return response.data;
+      // Backend returns: { payload: {...expense}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to update expense');
     }
@@ -55,7 +58,8 @@ export const settleExpense = createAsyncThunk(
   async ({ groupId, settlementData }, { rejectWithValue }) => {
     try {
       const response = await expenseAPI.settleExpense(groupId, settlementData);
-      return response.data;
+      // Backend returns: { payload: {...settlement}, statusCode, message }
+      return response.data.payload;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to settle expense');
     }
