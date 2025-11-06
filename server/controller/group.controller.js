@@ -175,7 +175,7 @@ const createGroup = asyncHandler(async (req, res) => {
             description: description || "",
             createdBy: userId,
             members: groupMembers,
-            baseCurrency: baseCurrency || "USD"
+            baseCurrency: baseCurrency || "INR"
         });
 
         await newGroup.save();

@@ -130,9 +130,10 @@ groupSchema.methods.removeMember = function (userId) {
 
 // Method to update member role
 groupSchema.methods.updateMemberRole = function (userId, newRole) {
-    const member = this.members.find(
-        (m) => m.userId.toString() === userId.toString()
-    );
+    const member = this.members.find((m) => {
+        const memberId = m.userId._id ? m.userId._id.toString() : m.userId.toString();
+        return memberId === userId.toString();
+    });
     if (!member) {
         throw new Error("Member not found in this group");
     }
@@ -142,17 +143,19 @@ groupSchema.methods.updateMemberRole = function (userId, newRole) {
 
 // Method to check if user is admin
 groupSchema.methods.isAdmin = function (userId) {
-    const member = this.members.find(
-        (m) => m.userId.toString() === userId.toString()
-    );
-    return member && member.role === "admin";
+    const member = this.members.find((m) => {
+        const memberId = m.userId._id ? m.userId._id.toString() : m.userId.toString();
+        return memberId === userId.toString();
+    });
+    return member?.role === "admin";
 };
 
 // Method to check if user is a member
 groupSchema.methods.isMember = function (userId) {
-    return this.members.some(
-        (m) => m.userId.toString() === userId.toString()
-    );
+    return this.members.some((m) => {
+        const memberId = m.userId._id ? m.userId._id.toString() : m.userId.toString();
+        return memberId === userId.toString();
+    });
 };
 
 export const Group = model("Group", groupSchema);

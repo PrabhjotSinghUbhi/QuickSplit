@@ -94,7 +94,7 @@ const AllExpenses = () => {
                           <span>•</span>
                           <span>{getRelativeTime(expense.createdAt)}</span>
                           <span>•</span>
-                          <span>{expense.splits?.length} people</span>
+                          <span>{expense.splitBetween?.length || expense.splits?.length} people</span>
                         </div>
                       </div>
                     </div>

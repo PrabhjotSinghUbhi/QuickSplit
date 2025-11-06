@@ -16,7 +16,7 @@ const AddExpenseModal = () => {
   const [formData, setFormData] = useState({
     description: '',
     amount: '',
-    currency: 'USD',
+    currency: 'INR',
     groupId: '',
     paidBy: '',
     splitType: 'equal',
@@ -43,7 +43,7 @@ const AddExpenseModal = () => {
       setFormData((prev) => ({
         ...prev,
         groupId: currentGroup._id,
-        currency: currentGroup.currency || 'USD',
+        currency: currentGroup.baseCurrency || 'INR',
         paidBy: user._id,
         splits: currentGroup.members?.map((member) => ({
           user: member._id,
@@ -71,6 +71,17 @@ const AddExpenseModal = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Build splitBetween array (all users in the split)
+      const splitBetween = formData.splits.map(split => split.user);
+      
+      // Build splitDetails for custom splits
+      const splitDetails = formData.splitType === 'custom' 
+        ? formData.splits.map(split => ({
+            userId: split.user,
+            amount: split.amount
+          }))
+        : undefined;
+
       await dispatch(
         createExpense({
           groupId: formData.groupId,
@@ -79,7 +90,9 @@ const AddExpenseModal = () => {
             amount: parseFloat(formData.amount),
             currency: formData.currency,
             paidBy: formData.paidBy,
-            splits: formData.splits,
+            splitBetween: splitBetween,
+            splitType: formData.splitType,
+            splitDetails: splitDetails,
           },
         })
       ).unwrap();
@@ -95,7 +108,7 @@ const AddExpenseModal = () => {
     setFormData({
       description: '',
       amount: '',
-      currency: 'USD',
+      currency: 'INR',
       groupId: '',
       paidBy: '',
       splitType: 'equal',
@@ -153,7 +166,7 @@ const AddExpenseModal = () => {
                 setFormData({
                   ...formData,
                   groupId: e.target.value,
-                  currency: group?.currency || 'USD',
+                  currency: group?.baseCurrency || 'INR',
                   paidBy: user._id,
                   splits: group?.members?.map((member) => ({
                     user: member._id,

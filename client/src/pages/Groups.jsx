@@ -101,7 +101,7 @@ const Groups = () => {
                     <div>
                       <p className="text-gray-500">Total Spent</p>
                       <p className="font-semibold text-gray-900">
-                        {formatCurrency(totalSpent, group.currency)}
+                        {formatCurrency(totalSpent, group.baseCurrency || group.currency)}
                       </p>
                     </div>
                     <div className="text-right">
@@ -114,7 +114,7 @@ const Groups = () => {
                 {/* Currency Badge */}
                 <div className="mt-4">
                   <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    {group.currency || 'USD'}
+                    {group.baseCurrency || group.currency || 'INR'}
                   </span>
                 </div>
               </Link>

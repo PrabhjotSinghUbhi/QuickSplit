@@ -38,12 +38,12 @@ const AddMemberModal = () => {
                 throw new Error("No group selected");
             }
 
+            // Backend expects just email or userId, not name
             await dispatch(
                 addMember({
                     groupId: currentGroup._id,
                     memberData: {
-                        email: formData.email,
-                        name: formData.name || formData.email
+                        email: formData.email
                     }
                 })
             ).unwrap();

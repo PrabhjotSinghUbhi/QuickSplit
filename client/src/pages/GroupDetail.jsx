@@ -20,9 +20,20 @@ const GroupDetail = () => {
     if (groupId) {
       // Clear the previous group data first to avoid stale data
       dispatch(clearCurrentGroup());
-      dispatch(fetchGroupDetails(groupId));
-      dispatch(fetchBalances(groupId));
-      dispatch(fetchExpenses(groupId));
+      dispatch(fetchGroupDetails(groupId))
+        .unwrap()
+        .then(() => {
+          // Only fetch balances and expenses after group details are loaded
+          dispatch(fetchBalances(groupId)).catch(err => {
+            console.error('Failed to fetch balances:', err);
+          });
+          dispatch(fetchExpenses(groupId)).catch(err => {
+            console.error('Failed to fetch expenses:', err);
+          });
+        })
+        .catch(err => {
+          console.error('Failed to fetch group details:', err);
+        });
     }
   }, [dispatch, groupId]);
 
@@ -92,7 +103,7 @@ const GroupDetail = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Total Spent</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">
-                {formatCurrency(totalSpent, currentGroup.currency)}
+                {formatCurrency(totalSpent, currentGroup.baseCurrency || currentGroup.currency)}
               </p>
             </div>
             <div className="bg-blue-50 p-3 rounded-lg">
@@ -120,7 +131,7 @@ const GroupDetail = () => {
             <div>
               <p className="text-sm font-medium text-gray-600">Your Balance</p>
               <p className={`text-2xl font-bold mt-2 ${userBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {userBalance >= 0 ? '+' : ''}{formatCurrency(userBalance, currentGroup.currency)}
+                {userBalance >= 0 ? '+' : ''}{formatCurrency(userBalance, currentGroup.baseCurrency || currentGroup.currency)}
               </p>
             </div>
             <div className={`${userBalance >= 0 ? 'bg-green-50' : 'bg-red-50'} p-3 rounded-lg`}>
@@ -173,7 +184,7 @@ const GroupDetail = () => {
                       {formatCurrency(expense.amount, expense.currency)}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {expense.splits?.length} people
+                      {expense.splitBetween?.length || expense.splits?.length} people
                     </p>
                   </div>
                 </div>
@@ -249,7 +260,7 @@ const GroupDetail = () => {
                       <span className="font-semibold">{settlement.to.name}</span>
                     </p>
                     <p className="text-lg font-bold text-yellow-700 mt-1">
-                      {formatCurrency(settlement.amount, currentGroup.currency)}
+                      {formatCurrency(settlement.amount, currentGroup.baseCurrency || currentGroup.currency)}
                     </p>
                   </div>
                 ))}

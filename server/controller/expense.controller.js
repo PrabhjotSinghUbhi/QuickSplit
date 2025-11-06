@@ -211,7 +211,7 @@ const createExpense = asyncHandler(async (req, res) => {
             group: groupId,
             description: description.trim(),
             amount: Number.parseFloat(amount),
-            currency: currency || group.baseCurrency || "USD",
+            currency: currency || group.baseCurrency || "INR",
             paidBy: payerId,
             splitBetween: splitUserIds,
             splitType: splitType || "equal",
@@ -482,7 +482,7 @@ const settleExpense = asyncHandler(async (req, res) => {
                 description ||
                 `Settlement: ${fromUser.fullName} paid ${toUser.fullName}`,
             amount: Number.parseFloat(amount),
-            currency: currency || group.baseCurrency || "USD",
+            currency: currency || group.baseCurrency || "INR",
             paidBy: from,
             splitBetween: [to],
             splitType: "settlement",

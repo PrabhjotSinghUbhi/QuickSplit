@@ -11,7 +11,7 @@ const CreateGroupModal = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    currency: 'USD',
+    currency: 'INR',
   });
   const [members, setMembers] = useState([]);
   const [newMember, setNewMember] = useState({ email: '', name: '' });
@@ -56,19 +56,11 @@ const CreateGroupModal = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // Include current user as a member automatically
-      const groupMembers = [
-        { 
-          _id: user._id, 
-          email: user.email, 
-          name: user.name 
-        },
-        ...members
-      ];
-
       await dispatch(createGroup({
-        ...formData,
-        members: groupMembers,
+        name: formData.name,
+        description: formData.description,
+        baseCurrency: formData.currency,
+        members: members,
       })).unwrap();
       
       setFormData({ name: '', description: '', currency: 'INR' });
@@ -83,7 +75,7 @@ const CreateGroupModal = () => {
   };
 
   const handleClose = () => {
-    setFormData({ name: '', description: '', currency: 'USD' });
+    setFormData({ name: '', description: '', currency: 'INR' });
     setMembers([]);
     setNewMember({ email: '', name: '' });
     dispatch(closeModal('createGroup'));

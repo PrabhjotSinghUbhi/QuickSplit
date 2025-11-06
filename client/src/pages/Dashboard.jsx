@@ -142,7 +142,7 @@ const Dashboard = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-medium text-gray-600">
-                      {group.currency || 'USD'}
+                      {group.baseCurrency || group.currency || 'INR'}
                     </p>
                   </div>
                 </Link>
