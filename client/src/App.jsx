@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Toaster } from 'react-hot-toast';
 import { fetchCurrentUser } from './store/slices/authSlice';
 import { fetchGroups } from './store/slices/groupSlice';
+import useSocket from './hooks/useSocket';
 
 // Layout and Routes
 import Layout from './components/Layout';
@@ -30,6 +31,9 @@ import './index.css';
 function App() {
   const dispatch = useDispatch();
   const { token, isAuthenticated } = useSelector((state) => state.auth);
+
+  // Initialize Socket.IO connection
+  useSocket(token);
 
   useEffect(() => {
     // Check for token and fetch user data on app initialization

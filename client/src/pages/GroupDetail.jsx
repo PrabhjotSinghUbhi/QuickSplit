@@ -1,17 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Receipt, TrendingUp, Plus, ArrowLeft, Settings, Trash2 } from 'lucide-react';
+import { Users, Receipt, TrendingUp, Plus, ArrowLeft, Settings, Trash2, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchGroupDetails, fetchBalances, deleteGroup, clearCurrentGroup } from '../store/slices/groupSlice';
 import { fetchExpenses } from '../store/slices/expenseSlice';
 import { openModal } from '../store/slices/uiSlice';
 import { formatCurrency, getRelativeTime, simplifyDebts } from '../utils/helpers';
+import ChatRoom from '../components/ChatRoom';
 
 const GroupDetail = () => {
   const { groupId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const [activeTab, setActiveTab] = useState('expenses'); // 'expenses' or 'chat'
   
   const { currentGroup, balances, loading } = useSelector((state) => state.groups);
   const { expensesByGroup } = useSelector((state) => state.expenses);
@@ -160,52 +162,91 @@ const GroupDetail = () => {
 
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Expenses - 2/3 width */}
-        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Expenses</h2>
+        {/* Main Content - 2/3 width */}
+        <div className="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          {/* Tabs */}
+          <div className="flex border-b border-gray-200">
             <button
-              onClick={() => dispatch(openModal('addExpense'))}
-              className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              onClick={() => setActiveTab('expenses')}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === 'expenses'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
             >
-              <Plus className="w-4 h-4" />
-              <span>Add</span>
+              <div className="flex items-center justify-center space-x-2">
+                <Receipt className="w-4 h-4" />
+                <span>Expenses</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('chat')}
+              className={`flex-1 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === 'chat'
+                  ? 'text-blue-600 border-b-2 border-blue-600 bg-blue-50'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <MessageSquare className="w-4 h-4" />
+                <span>Chat</span>
+              </div>
             </button>
           </div>
-          
-          {groupExpenses.length === 0 ? (
-            <div className="text-center py-12">
-              <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-500">No expenses yet</p>
+
+          {/* Tab Content */}
+          {activeTab === 'expenses' ? (
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-900">Expenses</h2>
+                <button
+                  onClick={() => dispatch(openModal('addExpense'))}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add</span>
+                </button>
+              </div>
+              
+              {groupExpenses.length === 0 ? (
+                <div className="text-center py-12">
+                  <Receipt className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <p className="text-gray-500">No expenses yet</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {groupExpenses.map((expense) => (
+                    <div
+                      key={expense._id}
+                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center space-x-3 flex-1">
+                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <Receipt className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-900">{expense.description}</p>
+                          <p className="text-sm text-gray-500">
+                            Paid by {expense.paidBy?.name} • {getRelativeTime(expense.createdAt)}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right ml-4">
+                        <p className="font-semibold text-gray-900">
+                          {formatCurrency(expense.amount, expense.currency)}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {expense.splitBetween?.length || expense.splits?.length} people
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              {groupExpenses.map((expense) => (
-                <div
-                  key={expense._id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center space-x-3 flex-1">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Receipt className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900">{expense.description}</p>
-                      <p className="text-sm text-gray-500">
-                        Paid by {expense.paidBy?.name} • {getRelativeTime(expense.createdAt)}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="text-right ml-4">
-                    <p className="font-semibold text-gray-900">
-                      {formatCurrency(expense.amount, expense.currency)}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {expense.splitBetween?.length || expense.splits?.length} people
-                    </p>
-                  </div>
-                </div>
-              ))}
+            <div className="h-[600px]">
+              <ChatRoom />
             </div>
           )}
         </div>

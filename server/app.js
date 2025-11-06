@@ -52,11 +52,13 @@ app.use(express.static("public/temp"));
 import userRoute from "./routes/user.route.js";
 import groupRoute from "./routes/group.route.js";
 import expenseRoute from "./routes/expense.route.js";
+import chatRoute from "./routes/chat.route.js";
 
 // API routes
 app.use("/api/v1/users", userRoute);
 app.use("/api/auth", userRoute); // Also expose on /api/auth for client compatibility
 app.use("/api/groups", groupRoute);
 app.use("/api/expenses", expenseRoute);
+app.use("/api/chat", chatRoute);
 
 export { app };

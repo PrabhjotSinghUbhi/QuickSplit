@@ -76,4 +76,12 @@ export const currencyAPI = {
   convertAmount: (amount, from, to) => api.get(`/currency/convert?amount=${amount}&from=${from}&to=${to}`),
 };
 
+// Chat API
+export const chatAPI = {
+  getMessages: (roomId, limit = 50, skip = 0) => api.get(`/chat/${roomId}?limit=${limit}&skip=${skip}`),
+  sendMessage: (messageData) => api.post('/chat/send', messageData),
+  markAsRead: (roomId) => api.put(`/chat/${roomId}/read`),
+  getUnreadCount: (roomId) => api.get(`/chat/${roomId}/unread`),
+};
+
 export default api;
