@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { Send, Loader2 } from 'lucide-react';
@@ -28,8 +28,16 @@ const ChatRoom = () => {
   const { messages, activeRoom, typingUsers, loading } = useSelector((state) => state.chat);
   const socket = useSocket(token);
 
-  const currentMessages = messages[groupId] || [];
-  const currentTypingUsers = typingUsers[groupId] || [];
+  // Memoize currentMessages to ensure proper re-renders when messages change
+  const currentMessages = useMemo(() => {
+    const msgs = messages[groupId] || [];
+    console.log('📨 Current messages for room', groupId, ':', msgs.length);
+    return msgs;
+  }, [messages, groupId]);
+  
+  const currentTypingUsers = useMemo(() => {
+    return typingUsers[groupId] || [];
+  }, [typingUsers, groupId]);
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -38,7 +46,10 @@ const ChatRoom = () => {
 
   // Monitor socket connection status
   useEffect(() => {
-    if (!socket) return;
+    if (!socket) {
+      console.log('⏳ Waiting for socket initialization...');
+      return;
+    }
 
     const handleConnect = () => {
       console.log('✅ Socket connected in ChatRoom');
@@ -58,8 +69,14 @@ const ChatRoom = () => {
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
 
-    // Set initial connection state
+    // Set initial connection state - CRITICAL FIX
+    console.log('🔍 Current socket connection state:', socket.connected);
     setIsConnected(socket.connected);
+
+    // If already connected, trigger handleConnect manually
+    if (socket.connected) {
+      console.log('✅ Socket already connected on mount');
+    }
 
     return () => {
       socket.off('connect', handleConnect);
@@ -69,44 +86,22 @@ const ChatRoom = () => {
 
   // Initialize chat room
   useEffect(() => {
-    if (!groupId || !socket) return;
-
-    // Wait for socket to be connected before joining
-    const joinRoom = () => {
-      if (!socket.connected) {
-        console.log('Waiting for socket connection...');
-        return;
-      }
-
-      console.log('Joining room:', groupId);
-      
-      // Set active room
-      dispatch(setActiveRoom(groupId));
-
-      // Fetch previous messages
-      dispatch(fetchMessages({ roomId: groupId }));
-
-      // Join the room
-      socket.emit('join_room', groupId);
-      hasJoinedRoom.current = true;
-
-      // Clear unread count
-      dispatch(clearUnreadCount(groupId));
-    };
-
-    // If already connected, join immediately
-    if (socket.connected) {
-      joinRoom();
-    } else {
-      // Wait for connection
-      socket.once('connect', joinRoom);
+    if (!groupId || !socket) {
+      console.log('⏳ Waiting for groupId and socket...', { groupId: !!groupId, socket: !!socket });
+      return;
     }
 
-    // Socket event listeners
+    console.log('🔄 Initializing chat room for group:', groupId, 'Socket connected:', socket.connected);
+
+    // Socket event listeners - SET UP FIRST before joining room
     const handleReceiveMessage = (message) => {
+      console.log('📩 Received message via socket:', message);
       if (message.roomId === groupId) {
+        console.log('✅ Message is for current room, adding to state');
         dispatch(addMessage({ roomId: groupId, message }));
         setTimeout(scrollToBottom, 100);
+      } else {
+        console.log('⚠️ Message is for different room:', message.roomId, 'current:', groupId);
       }
     };
 
@@ -117,10 +112,12 @@ const ChatRoom = () => {
     };
 
     const handleUserJoined = ({ userId, userName }) => {
+      console.log('👋 User joined:', userName);
       dispatch(addOnlineUser(userId));
     };
 
     const handleUserLeft = ({ userId }) => {
+      console.log('👋 User left:', userId);
       dispatch(removeOnlineUser(userId));
     };
 
@@ -132,6 +129,8 @@ const ChatRoom = () => {
       console.error('❌ Socket error:', error);
     };
 
+    // Register event listeners FIRST
+    console.log('📡 Registering socket event listeners for room:', groupId);
     socket.on('receive_message', handleReceiveMessage);
     socket.on('user_typing', handleUserTyping);
     socket.on('user_joined', handleUserJoined);
@@ -139,9 +138,61 @@ const ChatRoom = () => {
     socket.on('room_joined', handleRoomJoined);
     socket.on('error', handleError);
 
+    // Wait for socket to be connected before joining
+    const joinRoom = () => {
+      if (!socket.connected) {
+        console.log('⏳ Socket not connected yet, waiting...');
+        return;
+      }
+
+      console.log('✅ Joining room:', groupId);
+      
+      // Set active room
+      dispatch(setActiveRoom(groupId));
+
+      // Fetch previous messages
+      console.log('📥 Fetching previous messages for room:', groupId);
+      dispatch(fetchMessages({ roomId: groupId }));
+
+      // Join the room
+      console.log('🚪 Emitting join_room event for:', groupId);
+      socket.emit('join_room', groupId);
+      hasJoinedRoom.current = true;
+
+      // Clear unread count
+      dispatch(clearUnreadCount(groupId));
+    };
+
+    // If already connected, join immediately
+    if (socket.connected) {
+      console.log('✅ Socket already connected, joining room immediately');
+      joinRoom();
+    } else {
+      // Wait for connection - use once to avoid duplicate joins
+      console.log('⏳ Socket not connected, waiting for connection event...');
+      const connectHandler = () => {
+        console.log('✅ Socket connected event received, joining room');
+        joinRoom();
+      };
+      socket.once('connect', connectHandler);
+      
+      // Cleanup if component unmounts before connection
+      return () => {
+        socket.off('connect', connectHandler);
+        socket.off('receive_message', handleReceiveMessage);
+        socket.off('user_typing', handleUserTyping);
+        socket.off('user_joined', handleUserJoined);
+        socket.off('user_left', handleUserLeft);
+        socket.off('room_joined', handleRoomJoined);
+        socket.off('error', handleError);
+      };
+    }
+
     // Cleanup
     return () => {
+      console.log('🧹 Cleaning up chat room:', groupId);
       if (socket.connected) {
+        console.log('🚪 Leaving room:', groupId);
         socket.emit('leave_room', groupId);
       }
       socket.off('receive_message', handleReceiveMessage);
@@ -202,14 +253,15 @@ const ChatRoom = () => {
 
     // Send message via socket
     if (socket.connected) {
+      console.log('📤 Sending message via socket:', { roomId: groupId, message });
       socket.emit('send_message', {
         roomId: groupId,
         message,
         messageType: 'text',
       });
-      console.log('Message sent via socket');
+      console.log('✅ Message emitted to socket');
     } else {
-      console.error('Socket not connected, cannot send message');
+      console.error('❌ Socket not connected, cannot send message');
     }
   };
 

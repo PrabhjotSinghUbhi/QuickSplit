@@ -74,13 +74,21 @@ const chatSlice = createSlice({
     },
     addMessage: (state, action) => {
       const { roomId, message } = action.payload;
+      console.log('🔄 Redux: Adding message to room', roomId, message);
+      
       if (!state.messages[roomId]) {
+        console.log('📦 Redux: Creating new message array for room', roomId);
         state.messages[roomId] = [];
       }
+      
       // Check if message already exists (avoid duplicates)
       const exists = state.messages[roomId].some(msg => msg._id === message._id);
       if (!exists) {
+        console.log('✅ Redux: Message is new, adding to array');
         state.messages[roomId].push(message);
+        console.log('📊 Redux: Total messages in room now:', state.messages[roomId].length);
+      } else {
+        console.log('⚠️ Redux: Message already exists, skipping');
       }
     },
     setMessages: (state, action) => {

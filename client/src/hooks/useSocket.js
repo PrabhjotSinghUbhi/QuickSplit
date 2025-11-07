@@ -15,8 +15,8 @@ let isInitialized = false;
  */
 const initializeSocket = (token) => {
   // If socket exists and token hasn't changed, return existing socket
-  if (socket && socket.connected && currentToken === token) {
-    console.log('♻️ Reusing existing socket connection');
+  if (socket && currentToken === token) {
+    console.log('♻️ Reusing existing socket connection', { connected: socket.connected, id: socket.id });
     return socket;
   }
 
@@ -30,19 +30,20 @@ const initializeSocket = (token) => {
 
   // Create new socket connection only once
   if (!socket && !isInitialized) {
-    console.log('Creating new socket connection to:', SOCKET_URL);
+    console.log('🔌 Creating new socket connection to:', SOCKET_URL);
     isInitialized = true;
     currentToken = token;
     
     socket = io(SOCKET_URL, {
       auth: { token },
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'], // Try websocket first
       reconnection: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       timeout: 20000,
       autoConnect: true,
+      forceNew: false, // Reuse existing connection if possible
     });
 
     // Connection event handlers (set up only once)
@@ -52,6 +53,7 @@ const initializeSocket = (token) => {
 
     socket.on('connect_error', (error) => {
       console.error('❌ Socket connection error:', error.message);
+      isInitialized = false; // Allow retry on connection error
     });
 
     socket.on('disconnect', (reason) => {
@@ -75,6 +77,7 @@ const initializeSocket = (token) => {
 
     socket.on('reconnect_failed', () => {
       console.error('❌ Reconnection failed after maximum attempts');
+      isInitialized = false; // Allow retry after failed reconnection
     });
 
     socket.on('error', (error) => {
@@ -98,14 +101,21 @@ const useSocket = (token) => {
       return;
     }
 
-    // Get or create singleton socket instance
-    socketRef.current = initializeSocket(token);
+    // Get or create singleton socket instance and set it immediately
+    const socketInstance = initializeSocket(token);
+    socketRef.current = socketInstance;
 
     // Cleanup: Don't disconnect on unmount to maintain connection across components
     return () => {
       // Socket will persist across components
     };
   }, [token]);
+
+  // Return the socket instance immediately if it exists (for subsequent renders)
+  // On first render, this will be null, but socketRef will be updated in useEffect
+  if (!socketRef.current && token) {
+    socketRef.current = initializeSocket(token);
+  }
 
   return socketRef.current;
 };
