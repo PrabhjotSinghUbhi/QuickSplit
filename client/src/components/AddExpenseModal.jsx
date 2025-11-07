@@ -1,9 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, UtensilsCrossed, Car, Film, ShoppingBag, Home, Zap, Heart, Plane, GraduationCap, Dumbbell, ArrowRightLeft, MoreHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { createExpense, fetchExpenses } from '../store/slices/expenseSlice';
 import { closeModal } from '../store/slices/uiSlice';
+import { expenseAPI } from '../services/api';
+
+// Category icon mapping
+const categoryIcons = {
+  'UtensilsCrossed': UtensilsCrossed,
+  'Car': Car,
+  'Film': Film,
+  'ShoppingBag': ShoppingBag,
+  'Home': Home,
+  'Zap': Zap,
+  'Heart': Heart,
+  'Plane': Plane,
+  'GraduationCap': GraduationCap,
+  'Dumbbell': Dumbbell,
+  'ArrowRightLeft': ArrowRightLeft,
+  'MoreHorizontal': MoreHorizontal
+};
 
 const AddExpenseModal = () => {
   const dispatch = useDispatch();
@@ -21,12 +38,63 @@ const AddExpenseModal = () => {
     groupId: '',
     paidBy: '',
     splitType: 'equal',
+    category: 'Other',
     splits: [],
   });
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [error, setError] = useState('');
+  const categoryDropdownRef = useRef(null);
 
   const currencies = ['USD', 'EUR', 'GBP', 'INR', 'CAD', 'AUD', 'JPY'];
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (categoryDropdownRef.current && !categoryDropdownRef.current.contains(event.target)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    if (showCategoryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showCategoryDropdown]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await expenseAPI.getCategories();
+        setCategories(response.data.payload || []);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+        // Fallback to default categories if fetch fails
+        setCategories([
+          'Food',
+          'Transportation',
+          'Entertainment',
+          'Shopping',
+          'Housing',
+          'Utilities',
+          'Healthcare',
+          'Travel',
+          'Education',
+          'Fitness',
+          'Other'
+        ]);
+      }
+    };
+    
+    if (modals.addExpense) {
+      fetchCategories();
+    }
+  }, [modals.addExpense]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -129,6 +197,7 @@ const AddExpenseModal = () => {
             splitBetween: splitBetween,
             splitType: formData.splitType,
             splitDetails: splitDetails,
+            category: formData.category,
           },
         })
       ).unwrap();
@@ -157,6 +226,7 @@ const AddExpenseModal = () => {
       groupId: '',
       paidBy: '',
       splitType: 'equal',
+      category: 'Other',
       splits: [],
     });
     setError('');
@@ -317,6 +387,62 @@ const AddExpenseModal = () => {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Category
+            </label>
+            <div className="relative" ref={categoryDropdownRef}>
+              <button
+                type="button"
+                onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                className="w-full px-4 py-2 pl-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left bg-white hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center">
+                  <span>{formData.category}</span>
+                </div>
+              </button>
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                {(() => {
+                  const selectedCategory = categories.find(cat => 
+                    (typeof cat === 'string' ? cat : cat.name) === formData.category
+                  );
+                  const iconName = typeof selectedCategory === 'object' ? selectedCategory.icon : 'MoreHorizontal';
+                  const IconComponent = categoryIcons[iconName] || MoreHorizontal;
+                  return <IconComponent className="w-4 h-4 text-gray-500" />;
+                })()}
+              </div>
+              
+              {/* Custom Dropdown */}
+              {showCategoryDropdown && (
+                <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                  {categories.map((category) => {
+                    const categoryName = typeof category === 'string' ? category : category.name;
+                    const iconName = typeof category === 'object' ? category.icon : 'MoreHorizontal';
+                    const IconComponent = categoryIcons[iconName] || MoreHorizontal;
+                    
+                    return (
+                      <button
+                        key={categoryName}
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, category: categoryName });
+                          setShowCategoryDropdown(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors flex items-center gap-3 ${
+                          formData.category === categoryName ? 'bg-blue-50 text-blue-600' : 'text-gray-700'
+                        }`}
+                      >
+                        <IconComponent className="w-4 h-4 shrink-0" />
+                        <span>{categoryName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Split Type */}

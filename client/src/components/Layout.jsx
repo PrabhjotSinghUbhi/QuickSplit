@@ -2,6 +2,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import ExpenseDetailModal from './ExpenseDetailModal';
 
 const Layout = () => {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
@@ -28,6 +29,7 @@ const Layout = () => {
           <Outlet />
         </main>
       </div>
+      <ExpenseDetailModal />
     </div>
   );
 };

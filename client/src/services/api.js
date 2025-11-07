@@ -68,6 +68,7 @@ export const expenseAPI = {
   createExpense: (groupId, expenseData) => api.post(`/groups/${groupId}/expenses`, expenseData),
   updateExpense: (expenseId, expenseData) => api.put(`/expenses/${expenseId}`, expenseData),
   deleteExpense: (expenseId) => api.delete(`/expenses/${expenseId}`),
+  getCategories: () => api.get('/expenses/categories'),
 };
 
 // Currency API

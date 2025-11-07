@@ -61,12 +61,19 @@ const expenseSlice = createSlice({
   name: 'expenses',
   initialState: {
     expensesByGroup: {},
+    selectedExpense: null,
     loading: false,
     error: null,
   },
   reducers: {
     clearError: (state) => {
       state.error = null;
+    },
+    setSelectedExpense: (state, action) => {
+      state.selectedExpense = action.payload;
+    },
+    clearSelectedExpense: (state) => {
+      state.selectedExpense = null;
     },
   },
   extraReducers: (builder) => {
@@ -124,5 +131,5 @@ const expenseSlice = createSlice({
   },
 });
 
-export const { clearError } = expenseSlice.actions;
+export const { clearError, setSelectedExpense, clearSelectedExpense } = expenseSlice.actions;
 export default expenseSlice.reducer;

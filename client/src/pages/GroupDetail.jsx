@@ -1,13 +1,29 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Users, Receipt, TrendingUp, Plus, ArrowLeft, Settings, Trash2, MessageSquare } from 'lucide-react';
+import { Users, Receipt, TrendingUp, Plus, ArrowLeft, Settings, Trash2, MessageSquare, UtensilsCrossed, Car, Film, ShoppingBag, Home, Zap, Heart, Plane, GraduationCap, Dumbbell, ArrowRightLeft, MoreHorizontal } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { fetchGroupDetails, fetchBalances, deleteGroup, clearCurrentGroup } from '../store/slices/groupSlice';
-import { fetchExpenses } from '../store/slices/expenseSlice';
+import { fetchExpenses, setSelectedExpense } from '../store/slices/expenseSlice';
 import { openModal } from '../store/slices/uiSlice';
 import { formatCurrency, formatDate, getRelativeTime } from '../utils/helpers';
 import ChatRoom from '../components/ChatRoom';
+
+// Category icon mapping
+const categoryIcons = {
+  'Food': UtensilsCrossed,
+  'Transportation': Car,
+  'Entertainment': Film,
+  'Shopping': ShoppingBag,
+  'Housing': Home,
+  'Utilities': Zap,
+  'Healthcare': Heart,
+  'Travel': Plane,
+  'Education': GraduationCap,
+  'Fitness': Dumbbell,
+  'Settlement': ArrowRightLeft,
+  'Other': MoreHorizontal
+};
 
 const GroupDetail = () => {
   const { groupId } = useParams();
@@ -86,6 +102,11 @@ const GroupDetail = () => {
         toast.error(error.message || 'Failed to delete group');
       }
     }
+  };
+
+  const handleExpenseClick = (expense) => {
+    dispatch(setSelectedExpense(expense));
+    dispatch(openModal('expenseDetail'));
   };
 
   return (
@@ -215,32 +236,38 @@ const GroupDetail = () => {
                 </div>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {groupExpenses.map((expense) => (
-                    <div
-                      key={expense._id}
-                      className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                    >
-                      <div className="flex items-center space-x-3 flex-1">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Receipt className="w-5 h-5 text-blue-600" />
+                  {groupExpenses.map((expense) => {
+                    const category = expense.category || 'Other';
+                    const IconComponent = categoryIcons[category] || Receipt;
+                    
+                    return (
+                      <div
+                        key={expense._id}
+                        onClick={() => handleExpenseClick(expense)}
+                        className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                      >
+                        <div className="flex items-center space-x-3 flex-1">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <IconComponent className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-gray-900">{expense.description}</p>
+                            <p className="text-sm text-gray-500">
+                              Paid by {expense.paidBy?.name} • {getRelativeTime(expense.createdAt)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900">{expense.description}</p>
-                          <p className="text-sm text-gray-500">
-                            Paid by {expense.paidBy?.name} • {getRelativeTime(expense.createdAt)}
+                        <div className="text-right ml-4">
+                          <p className="font-semibold text-gray-900">
+                            {formatCurrency(expense.amount, expense.currency)}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {expense.splitBetween?.length || expense.splits?.length} people
                           </p>
                         </div>
                       </div>
-                      <div className="text-right ml-4">
-                        <p className="font-semibold text-gray-900">
-                          {formatCurrency(expense.amount, expense.currency)}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {expense.splitBetween?.length || expense.splits?.length} people
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

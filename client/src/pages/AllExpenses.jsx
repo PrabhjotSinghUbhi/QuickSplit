@@ -1,8 +1,26 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Receipt, Filter, Search, Calendar } from 'lucide-react';
+import { Receipt, Filter, Search, Calendar, UtensilsCrossed, Car, Film, ShoppingBag, Home, Zap, Heart, Plane, GraduationCap, Dumbbell, ArrowRightLeft, MoreHorizontal } from 'lucide-react';
 import { fetchGroups } from '../store/slices/groupSlice';
+import { setSelectedExpense } from '../store/slices/expenseSlice';
+import { openModal } from '../store/slices/uiSlice';
 import { formatCurrency, getRelativeTime } from '../utils/helpers';
+
+// Category icon mapping
+const categoryIcons = {
+  'Food': UtensilsCrossed,
+  'Transportation': Car,
+  'Entertainment': Film,
+  'Shopping': ShoppingBag,
+  'Housing': Home,
+  'Utilities': Zap,
+  'Healthcare': Heart,
+  'Travel': Plane,
+  'Education': GraduationCap,
+  'Fitness': Dumbbell,
+  'Settlement': ArrowRightLeft,
+  'Other': MoreHorizontal
+};
 
 const AllExpenses = () => {
   const dispatch = useDispatch();
@@ -17,6 +35,11 @@ const AllExpenses = () => {
   const allExpenses = Object.values(expensesByGroup)
     .flat()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const handleExpenseClick = (expense) => {
+    dispatch(setSelectedExpense(expense));
+    dispatch(openModal('expenseDetail'));
+  };
 
   return (
     <div className="space-y-6">
@@ -67,16 +90,19 @@ const AllExpenses = () => {
           <div className="divide-y divide-gray-100">
             {allExpenses.map((expense) => {
               const group = groups.find(g => g._id === expense.group);
+              const category = expense.category || 'Other';
+              const IconComponent = categoryIcons[category] || Receipt;
               
               return (
                 <div
                   key={expense._id}
-                  className="p-6 hover:bg-gray-50 transition-colors"
+                  onClick={() => handleExpenseClick(expense)}
+                  className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 flex-1">
                       <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <Receipt className="w-6 h-6 text-blue-600" />
+                        <IconComponent className="w-6 h-6 text-blue-600" />
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center space-x-2">

@@ -1,9 +1,27 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { TrendingUp, Users, Receipt, DollarSign } from 'lucide-react';
+import { TrendingUp, Users, Receipt, DollarSign, UtensilsCrossed, Car, Film, ShoppingBag, Home, Zap, Heart, Plane, GraduationCap, Dumbbell, ArrowRightLeft, MoreHorizontal } from 'lucide-react';
 import { fetchGroups } from '../store/slices/groupSlice';
+import { setSelectedExpense } from '../store/slices/expenseSlice';
+import { openModal } from '../store/slices/uiSlice';
 import { formatCurrency, getRelativeTime } from '../utils/helpers';
 import { Link } from 'react-router-dom';
+
+// Category icon mapping
+const categoryIcons = {
+  'Food': UtensilsCrossed,
+  'Transportation': Car,
+  'Entertainment': Film,
+  'Shopping': ShoppingBag,
+  'Housing': Home,
+  'Utilities': Zap,
+  'Healthcare': Heart,
+  'Travel': Plane,
+  'Education': GraduationCap,
+  'Fitness': Dumbbell,
+  'Settlement': ArrowRightLeft,
+  'Other': MoreHorizontal
+};
 
 const Dashboard = () => {
   const dispatch = useDispatch();
@@ -34,6 +52,11 @@ const Dashboard = () => {
     .flat()
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
+
+  const handleExpenseClick = (expense) => {
+    dispatch(setSelectedExpense(expense));
+    dispatch(openModal('expenseDetail'));
+  };
 
   const stats = [
     {
@@ -170,30 +193,36 @@ const Dashboard = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {recentExpenses.map((expense) => (
-                <div
-                  key={expense._id}
-                  className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                      <Receipt className="w-5 h-5 text-green-600" />
+              {recentExpenses.map((expense) => {
+                const category = expense.category || 'Other';
+                const IconComponent = categoryIcons[category] || Receipt;
+                
+                return (
+                  <div
+                    key={expense._id}
+                    onClick={() => handleExpenseClick(expense)}
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                        <IconComponent className="w-5 h-5 text-green-600" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">{expense.description}</p>
+                        <p className="text-sm text-gray-500">
+                          {getRelativeTime(expense.createdAt)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium text-gray-900">{expense.description}</p>
-                      <p className="text-sm text-gray-500">
-                        {getRelativeTime(expense.createdAt)}
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">
+                        {formatCurrency(expense.amount, expense.currency)}
                       </p>
+                      <p className="text-xs text-gray-500">{expense.paidBy?.name}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-gray-900">
-                      {formatCurrency(expense.amount, expense.currency)}
-                    </p>
-                    <p className="text-xs text-gray-500">{expense.paidBy?.name}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

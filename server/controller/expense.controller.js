@@ -534,10 +534,52 @@ const deleteExpense = asyncHandler(async (req, res) => {
     }
 });
 
+// Get available expense categories
+const getCategories = asyncHandler(async (req, res) => {
+    try {
+        const categories = [
+            { name: "Food", icon: "UtensilsCrossed" },
+            { name: "Transportation", icon: "Car" },
+            { name: "Entertainment", icon: "Film" },
+            { name: "Shopping", icon: "ShoppingBag" },
+            { name: "Housing", icon: "Home" },
+            { name: "Utilities", icon: "Zap" },
+            { name: "Healthcare", icon: "Heart" },
+            { name: "Travel", icon: "Plane" },
+            { name: "Education", icon: "GraduationCap" },
+            { name: "Fitness", icon: "Dumbbell" },
+            { name: "Settlement", icon: "ArrowRightLeft" },
+            { name: "Other", icon: "MoreHorizontal" }
+        ];
+
+        return res
+            .status(200)
+            .json(
+                new ApiResponse(
+                    categories,
+                    200,
+                    "Categories fetched successfully"
+                )
+            );
+    } catch (error) {
+        console.error("Error in fetching categories:", error.message);
+        return res
+            .status(error.statusCode || 500)
+            .json(
+                new ApiResponse(
+                    null,
+                    error.statusCode || 500,
+                    error.message || "Failed to fetch categories"
+                )
+            );
+    }
+});
+
 export {
     getExpenses,
     getExpenseById,
     createExpense,
     updateExpense,
-    deleteExpense
+    deleteExpense,
+    getCategories
 };

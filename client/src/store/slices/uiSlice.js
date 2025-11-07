@@ -11,6 +11,7 @@ const uiSlice = createSlice({
       addExpense: false,
       addMember: false,
       settleUp: false,
+      expenseDetail: false,
     },
   },
   reducers: {
